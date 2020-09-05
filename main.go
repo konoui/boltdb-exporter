@@ -17,47 +17,54 @@ type config struct {
 	marshaler    func(interface{}) ([]byte, error)
 }
 
-var (
-	conf      config
-	rootFlags = flag.NewFlagSet("boltdb-exporter", flag.ExitOnError)
-	rootCmd   = &ffcli.Command{
+func newRootCmd() *ffcli.Command {
+	cfg := new(config)
+	fs := flag.NewFlagSet("boltdb-exporter", flag.ExitOnError)
+	cfg.registerFlags(fs)
+
+	return &ffcli.Command{
 		Usage:     "boltdb-exporter --db <db filename> [flags...]",
 		ShortHelp: "expot/dump boltdb as json/yaml format",
-		FlagSet:   rootFlags,
+		FlagSet:   fs,
 		Exec: func(args []string) error {
-			return conf.run()
+			return cfg.run()
 		},
 	}
-)
+}
 
-func (c *config) validate() error {
-	if c.filename == "" {
+func (cfg *config) registerFlags(fs *flag.FlagSet) {
+	fs.StringVar(&cfg.outputFormat, "format", "json", "support json/yaml")
+	fs.StringVar(&cfg.filename, "db", "", "database filename")
+}
+
+func (cfg *config) validate() error {
+	if cfg.filename == "" {
 		return fmt.Errorf("database file option is not specified ")
 	}
 
-	if _, err := os.Stat(c.filename); os.IsNotExist(err) {
-		return fmt.Errorf("databse file %s does not exist", c.filename)
+	if _, err := os.Stat(cfg.filename); os.IsNotExist(err) {
+		return fmt.Errorf("databse file %s does not exist", cfg.filename)
 	}
 
-	switch c.outputFormat {
+	switch cfg.outputFormat {
 	case "json":
-		c.marshaler = func(i interface{}) ([]byte, error) {
+		cfg.marshaler = func(i interface{}) ([]byte, error) {
 			return json.MarshalIndent(i, "", "  ")
 		}
 	case "yaml", "yml":
-		c.marshaler = yaml.Marshal
+		cfg.marshaler = yaml.Marshal
 	default:
-		return fmt.Errorf("%s is an invalid output format", c.outputFormat)
+		return fmt.Errorf("%s is an invalid output format", cfg.outputFormat)
 	}
 	return nil
 }
 
-func (c *config) run() error {
-	if err := c.validate(); err != nil {
+func (cfg *config) run() error {
+	if err := cfg.validate(); err != nil {
 		return err
 	}
 
-	b, err := exporter.Export(c.filename, c.marshaler)
+	b, err := exporter.Export(cfg.filename, cfg.marshaler)
 	if err != nil {
 		return err
 	}
@@ -66,12 +73,8 @@ func (c *config) run() error {
 	return nil
 }
 
-func init() {
-	rootFlags.StringVar(&conf.outputFormat, "format", "json", "support json/yaml")
-	rootFlags.StringVar(&conf.filename, "db", "", "database filename")
-}
-
 func main() {
+	rootCmd := newRootCmd()
 	if err := rootCmd.Run(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		fmt.Fprintf(os.Stderr, "Usage: %s\n", rootCmd.Usage)
