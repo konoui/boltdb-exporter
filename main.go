@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/konoui/boltdb-exporter/pkg/exporter"
-	"github.com/peterbourgon/ff/ffcli"
+	"github.com/peterbourgon/ff/v3/ffcli"
 )
 
 type config struct {
@@ -23,10 +24,11 @@ func newRootCmd() *ffcli.Command {
 	cfg.registerFlags(fs)
 
 	return &ffcli.Command{
-		Usage:     "boltdb-exporter --db <db filename> [flags...]",
-		ShortHelp: "expot/dump boltdb as json/yaml format",
-		FlagSet:   fs,
-		Exec: func(args []string) error {
+		Name:       "boltdb-exporter",
+		ShortUsage: "boltdb-exporter --db <db filename> [flags...]",
+		ShortHelp:  "expot/dump boltdb as json/yaml format",
+		FlagSet:    fs,
+		Exec: func(ctx context.Context, args []string) error {
 			return cfg.run()
 		},
 	}
@@ -75,9 +77,9 @@ func (cfg *config) run() error {
 
 func main() {
 	rootCmd := newRootCmd()
-	if err := rootCmd.Run(os.Args[1:]); err != nil {
+	if err := rootCmd.ParseAndRun(context.Background(), os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		fmt.Fprintf(os.Stderr, "Usage: %s\n", rootCmd.Usage)
+		fmt.Fprintf(os.Stderr, "Usage: %s\n", rootCmd.ShortUsage)
 		os.Exit(1)
 	}
 }
