@@ -44,7 +44,7 @@ func (cfg *config) validate() error {
 		return fmt.Errorf("database file option is not specified ")
 	}
 
-	if _, err := os.Stat(cfg.filename); os.IsNotExist(err) {
+	if _, err := os.Stat(cfg.filename); err != nil {
 		return fmt.Errorf("databse file %s does not exist", cfg.filename)
 	}
 
