@@ -6,6 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
+
+	"golang.org/x/xerrors"
 
 	"github.com/ghodss/yaml"
 	"github.com/konoui/boltdb-exporter/pkg/exporter"
@@ -13,9 +16,10 @@ import (
 )
 
 type config struct {
-	filename     string
-	outputFormat string
-	marshaler    func(interface{}) ([]byte, error)
+	filename        string
+	outputFormat    string
+	outputDirectory string
+	marshaler       func(interface{}) ([]byte, error)
 }
 
 func newRootCmd() *ffcli.Command {
@@ -37,6 +41,7 @@ func newRootCmd() *ffcli.Command {
 func (cfg *config) registerFlags(fs *flag.FlagSet) {
 	fs.StringVar(&cfg.outputFormat, "format", "json", "support json/yaml")
 	fs.StringVar(&cfg.filename, "db", "", "database filename")
+	fs.StringVar(&cfg.outputDirectory, "out", "", "directory output file will saved")
 }
 
 func (cfg *config) validate() error {
@@ -70,8 +75,25 @@ func (cfg *config) run() error {
 	if err != nil {
 		return err
 	}
+	for bucketName, byteData := range b {
+		err := os.MkdirAll(cfg.outputDirectory, 0777)
+		if err != nil {
+			return xerrors.Errorf("Cannot create %s: %w", cfg.outputDirectory, err)
+		}
+		bucketFile := fmt.Sprintf("%s.json", bucketName)
 
-	fmt.Fprintln(os.Stdout, string(b))
+		filePath := path.Join(cfg.outputDirectory, bucketFile)
+
+		f, err := os.Create(filePath)
+		if err != nil {
+			return xerrors.Errorf("unable to open %s: %w", filePath, err)
+		}
+
+		if _, err = f.Write(byteData); err != nil {
+			return xerrors.Errorf("failed to save a file: %w", err)
+		}
+		//fmt.Fprintln(os.Stdout, string(byteData))
+	}
 	return nil
 }
 
