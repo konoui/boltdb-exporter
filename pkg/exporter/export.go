@@ -6,7 +6,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-func Export(filename string, marshaler func(interface{}) ([]byte, error)) (ret []byte, err error) {
+func Export(filename string, marshaler func(interface{}) ([]byte, error)) (ret map[string][]byte, err error) {
 	db, err := bolt.Open(filename, 0600, &bolt.Options{
 		ReadOnly: true,
 	})
@@ -17,14 +17,19 @@ func Export(filename string, marshaler func(interface{}) ([]byte, error)) (ret [
 	return export(db, marshaler)
 }
 
-func export(db *bolt.DB, marshaler func(interface{}) ([]byte, error)) (ret []byte, err error) {
+func export(db *bolt.DB, marshaler func(interface{}) ([]byte, error)) (bucketMap map[string][]byte, err error) {
+	bucketMap = make(map[string][]byte)
 	err = db.View(func(tx *bolt.Tx) error {
 		c := tx.Cursor()
 		rawMap := makeRawMap(tx, c)
-		ret, err = marshaler(rawMap)
-		if err != nil {
-			return err
+		for bucketName, value := range rawMap{
+			ret, err := marshaler(value)
+			bucketMap[bucketName] = ret
+			if err != nil {
+				return err
+			}
 		}
+
 		return nil
 	})
 	return
