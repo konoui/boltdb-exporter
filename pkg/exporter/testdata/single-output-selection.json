@@ -1,0 +1,54 @@
+{
+    "bucket2": {
+        "1": {
+            "Data1": "1",
+            "Data2": "2",
+            "Data3": 3,
+            "Data4": {
+                "Data1": "4-1",
+                "Data2": "4-2",
+                "Data3": 3,
+                "Data4": null,
+                "Data5": null
+            },
+            "Data5": {
+                "Data1": "data5-nested1",
+                "Data2": "data5-nested2",
+                "Data3": 0,
+                "Data4": {
+                    "Data1": "5-4-1",
+                    "Data2": "5-4-2",
+                    "Data3": 541,
+                    "Data4": null,
+                    "Data5": null
+                },
+                "Data5": null
+            }
+        },
+        "2": {
+            "Data1": "1",
+            "Data2": "2",
+            "Data3": 3,
+            "Data4": {
+                "Data1": "4-1",
+                "Data2": "4-2",
+                "Data3": 3,
+                "Data4": null,
+                "Data5": null
+            },
+            "Data5": {
+                "Data1": "data5-nested1",
+                "Data2": "data5-nested2",
+                "Data3": 0,
+                "Data4": {
+                    "Data1": "5-4-1",
+                    "Data2": "5-4-2",
+                    "Data3": 541,
+                    "Data4": null,
+                    "Data5": null
+                },
+                "Data5": null
+            }
+        }
+    }
+}

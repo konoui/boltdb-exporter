@@ -12,10 +12,22 @@ import (
 	"github.com/peterbourgon/ff/v3/ffcli"
 )
 
+type arrayFlag []string
+
 type config struct {
-	filename     string
-	outputFormat string
-	marshaler    func(interface{}) ([]byte, error)
+	filename        string
+	outputFormat    string
+	bucketSelection arrayFlag
+	marshaler       func(interface{}) ([]byte, error)
+}
+
+func (i *arrayFlag) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+func (i *arrayFlag) String() string {
+	return "..."
 }
 
 func newRootCmd() *ffcli.Command {
@@ -37,6 +49,7 @@ func newRootCmd() *ffcli.Command {
 func (cfg *config) registerFlags(fs *flag.FlagSet) {
 	fs.StringVar(&cfg.outputFormat, "format", "json", "support json/yaml")
 	fs.StringVar(&cfg.filename, "db", "", "database filename")
+	fs.Var(&cfg.bucketSelection, "bucket", "select root-level bucket to export (can be used multiple times)")
 }
 
 func (cfg *config) validate() error {
@@ -66,7 +79,15 @@ func (cfg *config) run() error {
 		return err
 	}
 
-	b, err := exporter.Export(cfg.filename, cfg.marshaler)
+	var bucketSelectionSet map[string]bool
+	if len(cfg.bucketSelection) > 0 {
+		bucketSelectionSet = make(map[string]bool)
+		for _, bucket := range cfg.bucketSelection {
+			bucketSelectionSet[bucket] = true
+		}
+	}
+
+	b, err := exporter.Export(cfg.filename, cfg.marshaler, bucketSelectionSet)
 	if err != nil {
 		return err
 	}

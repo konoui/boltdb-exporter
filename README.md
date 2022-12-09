@@ -8,7 +8,7 @@ $ go get -u github.com/konoui/boltdb-exporter
 
 ## Usage
 ```
-$ boltdb-exporter --db <database filename> --format yaml
+$ boltdb-exporter --db <database filename> --format yaml [--bucket <root bucket name> ...]
 ```
 
 ## Example
