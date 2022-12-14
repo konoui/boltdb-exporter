@@ -45,20 +45,29 @@ var testData = TestData{
 
 func Test_export(t *testing.T) {
 	tests := []struct {
-		name     string
-		wantPath string
-		setuper  func(*testing.T, string) *bolt.DB
-		update   bool
+		name      string
+		wantPath  string
+		setuper   func(*testing.T, string) *bolt.DB
+		update    bool
+		selection map[string]bool
 	}{
 		{
-			name:     "multi buckets",
-			wantPath: filepath.Join("testdata", "single-output.json"),
-			setuper:  setupSingle,
+			name:      "multi buckets",
+			wantPath:  filepath.Join("testdata", "single-output.json"),
+			setuper:   setupSingle,
+			selection: nil,
 		},
 		{
-			name:     "nested buckets",
-			setuper:  setupNested,
-			wantPath: filepath.Join("testdata", "nested-output.json"),
+			name:      "nested buckets",
+			setuper:   setupNested,
+			wantPath:  filepath.Join("testdata", "nested-output.json"),
+			selection: nil,
+		},
+		{
+			name:      "bucket selection",
+			wantPath:  filepath.Join("testdata", "single-output-selection.json"),
+			setuper:   setupSingle,
+			selection: map[string]bool{"bucket2": true},
 		},
 	}
 
@@ -67,7 +76,7 @@ func Test_export(t *testing.T) {
 			db := tt.setuper(t, filename)
 			defer cleanup(t, db, filename)
 
-			gotData, err := export(db, json.Marshal)
+			gotData, err := export(db, json.Marshal, tt.selection)
 			if err != nil {
 				t.Error(err)
 			}

@@ -6,7 +6,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-func Export(filename string, marshaler func(interface{}) ([]byte, error)) (ret []byte, err error) {
+func Export(filename string, marshaler func(interface{}) ([]byte, error), bucketSelection map[string]bool) (ret []byte, err error) {
 	db, err := bolt.Open(filename, 0600, &bolt.Options{
 		ReadOnly: true,
 	})
@@ -14,13 +14,13 @@ func Export(filename string, marshaler func(interface{}) ([]byte, error)) (ret [
 		return nil, err
 	}
 	defer db.Close()
-	return export(db, marshaler)
+	return export(db, marshaler, bucketSelection)
 }
 
-func export(db *bolt.DB, marshaler func(interface{}) ([]byte, error)) (ret []byte, err error) {
+func export(db *bolt.DB, marshaler func(interface{}) ([]byte, error), bucketSelection map[string]bool) (ret []byte, err error) {
 	err = db.View(func(tx *bolt.Tx) error {
 		c := tx.Cursor()
-		rawMap := makeRawMap(tx, c)
+		rawMap := makeRawMap(tx, c, bucketSelection)
 		ret, err = marshaler(rawMap)
 		if err != nil {
 			return err
@@ -30,14 +30,21 @@ func export(db *bolt.DB, marshaler func(interface{}) ([]byte, error)) (ret []byt
 	return
 }
 
-func makeRawMap(tx *bolt.Tx, c *bolt.Cursor) map[string]interface{} {
+func makeRawMap(tx *bolt.Tx, c *bolt.Cursor, bucketSelection map[string]bool) map[string]interface{} {
 	rawMap := make(map[string]interface{})
-	recursiveRawMap(tx, c, rawMap)
+	recursiveRawMap(tx, c, rawMap, bucketSelection)
 	return rawMap
 }
 
-func recursiveRawMap(tx *bolt.Tx, c *bolt.Cursor, rawMap map[string]interface{}) map[string]interface{} {
+func recursiveRawMap(tx *bolt.Tx, c *bolt.Cursor, rawMap map[string]interface{}, bucketSelection map[string]bool) map[string]interface{} {
 	for k, v := c.First(); k != nil; k, v = c.Next() {
+		// skip bucket if not selected
+		if bucketSelection != nil {
+			if _, ok := bucketSelection[string(k)]; !ok {
+				continue
+			}
+		}
+
 		if v == nil {
 			bucket := c.Bucket().Bucket(k)
 			if bucket == nil {
@@ -45,7 +52,7 @@ func recursiveRawMap(tx *bolt.Tx, c *bolt.Cursor, rawMap map[string]interface{})
 			}
 			nextCursor := bucket.Cursor()
 			nextMap := make(map[string]interface{})
-			rawMap[string(k)] = recursiveRawMap(tx, nextCursor, nextMap)
+			rawMap[string(k)] = recursiveRawMap(tx, nextCursor, nextMap, nil)
 			continue
 		}
 
