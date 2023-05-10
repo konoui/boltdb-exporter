@@ -3,7 +3,6 @@ package exporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -81,12 +80,12 @@ func Test_export(t *testing.T) {
 				t.Error(err)
 			}
 			if tt.update {
-				if err := ioutil.WriteFile(tt.wantPath, gotData, 0644); err != nil {
+				if err := os.WriteFile(tt.wantPath, gotData, 0644); err != nil {
 					t.Fatal(err)
 				}
 			}
 
-			wantData, err := ioutil.ReadFile(tt.wantPath)
+			wantData, err := os.ReadFile(tt.wantPath)
 			if err != nil {
 				t.Fatal(err)
 			}
